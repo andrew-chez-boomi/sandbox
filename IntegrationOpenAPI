@@ -17,7 +17,7 @@ security:
   - basicAuth: []
 
 paths:
-  /ws/rest/opneapi:
+  /ws/rest/openapi:
     post:
       summary: Execute Flow OpenAPI Test
       description: >
