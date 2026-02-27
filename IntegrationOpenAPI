@@ -1,0 +1,80 @@
+openapi: "3.0.3"
+info:
+  title: Flow OpenAPI Test
+  description: >
+    Boomi Integration process exposed via the Shared Web Server (WSS listener).
+    Accepts a JSON payload with an `Input` field and returns an `Output` field
+    echoing the input with a confirmation message.
+  version: "1.0.0"
+  contact:
+    email: andrew.chez@boomi.com
+
+servers:
+  - url: https://c02-usa-east.integrate.boomi.com
+    description: Boomi Shared Web Server (US East)
+
+security:
+  - basicAuth: []
+
+paths:
+  /ws/rest/opneapi:
+    post:
+      summary: Execute Flow OpenAPI Test
+      description: >
+        Triggers the "Flow OpenAPI Test" Boomi process. The process reads the
+        `Input` value from the request body and returns it embedded in a
+        confirmation message as `Output`.
+      operationId: executeFlowOpenAPITest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlowOpenAPITestRequest"
+            example:
+              Input: "Hello from Flow"
+      responses:
+        "200":
+          description: Process executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowOpenAPITestResponse"
+              example:
+                Output: "Hello from Flow - that data came from outside the process"
+        "400":
+          description: Bad request — malformed JSON or missing required fields
+        "401":
+          description: Unauthorized — invalid or missing Basic Auth credentials
+        "500":
+          description: Internal server error — process execution failure
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: >
+        Boomi Shared Web Server credentials.
+        Username format: `<user>@<accountId>.<token-suffix>`
+
+  schemas:
+    FlowOpenAPITestRequest:
+      type: object
+      required:
+        - Input
+      properties:
+        Input:
+          type: string
+          description: The value to be echoed back by the process.
+          example: "Hello from Flow"
+
+    FlowOpenAPITestResponse:
+      type: object
+      properties:
+        Output:
+          type: string
+          description: >
+            The Input value with the suffix
+            " - that data came from outside the process".
+          example: "Hello from Flow - that data came from outside the process"
