@@ -20,7 +20,10 @@ info:
       under `headers` (Boomi surfaces them as `inheader_*` document properties).
       A few hop-by-hop / auth headers (e.g. `Authorization`, `Host`,
       `Content-Length`, `User-Agent`) are consumed by the runtime and may not
-      appear.
+      appear. `X-Echo-Token` is a **declared** request header the API explicitly
+      looks for: it is documented in the contract below and echoed back under
+      `headers` when supplied. It is optional — omitting it does not fail the
+      request.
 
     - **Body** — echoed under `body`. If the request body is valid JSON it is
       echoed as parsed JSON (object/array/scalar); otherwise it is echoed as a
@@ -42,8 +45,10 @@ security:
 
 paths:
   /echo:
-    # Query parameters are declared at the path level so both GET and POST share them.
+    # Parameters are declared at the path level so both GET and POST share them.
     parameters:
+      # Declared request header the API looks for; echoed back under `headers` when present.
+      - { name: X-Echo-Token, in: header, required: false, schema: { type: string }, description: Optional caller-supplied token header the API looks for; echoed back under `headers` when present. }
       - { name: id,        in: query, required: false, schema: { type: string }, description: Echoed when present }
       - { name: name,      in: query, required: false, schema: { type: string }, description: Echoed when present }
       - { name: q,         in: query, required: false, schema: { type: string }, description: Echoed when present }
@@ -129,7 +134,7 @@ components:
                 method: POST
                 path: /echotest/v1/echo
                 queryParameters: { foo: bar, page: "2", color: blue, user-name: alice }
-                headers: { Accept: "*/*", Content-Type: application/json }
+                headers: { Accept: "*/*", Content-Type: application/json, X-Echo-Token: tok_abc123 }
                 body: { hello: world, nested: { a: 1, b: [1, 2, 3] } }
             textBody:
               summary: POST with plain-text body
