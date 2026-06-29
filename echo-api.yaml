@@ -1,0 +1,182 @@
+openapi: 3.0.3
+info:
+  title: Echo API
+  version: "1.0.0"
+  description: >
+    A testing API that echoes back what the caller sends. The response is a
+    structured JSON envelope describing the request: its HTTP method, URL path,
+    query parameters, headers, and body.
+
+
+    Built on Boomi (advanced runtime) as an API Service Component wrapping a
+    Web Services Server listener process. The same resource is exposed for both
+    GET (no body) and POST (with body).
+
+
+    ## Behavior notes
+
+
+    - **Headers** — ALL inbound HTTP request headers are echoed back generically
+      under `headers` (Boomi surfaces them as `inheader_*` document properties).
+      A few hop-by-hop / auth headers (e.g. `Authorization`, `Host`,
+      `Content-Length`, `User-Agent`) are consumed by the runtime and may not
+      appear.
+
+    - **Body** — echoed under `body`. If the request body is valid JSON it is
+      echoed as parsed JSON (object/array/scalar); otherwise it is echoed as a
+      raw string. Any content type is accepted. GET requests have no body, so
+      `body` is an empty string.
+
+    - **Query parameters** — echoed under `queryParameters`. Boomi can only
+      read query parameters by known name (arbitrary names cannot be enumerated
+      at runtime), so only the names listed under `parameters` are reflected.
+      Unlisted query parameters are accepted by the server but not echoed. Add
+      more names to the process's `QUERY_KEYS` list to support them.
+
+servers:
+  - url: https://c02-usa-east.integrate.boomi.com/ws/rest/echotest/v1
+    description: Boomi advanced runtime (shared web server, REST tier)
+
+security:
+  - basicAuth: []
+
+paths:
+  /echo:
+    # Query parameters are declared at the path level so both GET and POST share them.
+    parameters:
+      - { name: id,        in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: name,      in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: q,         in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: query,     in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: key,       in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: value,     in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: foo,       in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: bar,       in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: baz,       in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: page,      in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: limit,     in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: offset,    in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: type,      in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: filter,    in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: sort,      in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: order,     in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: search,    in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: lang,      in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: locale,    in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: format,    in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: token,     in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: status,    in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: color,     in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: user-name, in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: email,     in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: code,      in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: action,    in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: mode,      in: query, required: false, schema: { type: string }, description: Echoed when present }
+      - { name: debug,     in: query, required: false, schema: { type: string }, description: Echoed when present }
+    get:
+      operationId: echoRequestGet
+      summary: Echo the request back as a structured JSON envelope (no body)
+      description: >
+        GET variant for quick browser/curl testing. Echoes method, path,
+        supported query parameters, and headers. `body` is always an empty
+        string since GET requests carry no body.
+      responses:
+        "200":
+          $ref: "#/components/responses/EchoEnvelopeResponse"
+    post:
+      operationId: echoRequest
+      summary: Echo the request back as a structured JSON envelope
+      description: >
+        Accepts any body, any headers, and the supported query parameters, and
+        returns a JSON envelope describing the request as the server received it.
+      requestBody:
+        required: false
+        description: Any payload. JSON is echoed as parsed JSON; anything else as a raw string.
+        content:
+          application/json:
+            schema: {}
+            examples:
+              jsonObject:
+                value: { hello: "world", nested: { a: 1, b: [1, 2, 3] } }
+          text/plain:
+            schema: { type: string }
+            examples:
+              plainText:
+                value: "just plain text, not json"
+          "*/*":
+            schema: {}
+      responses:
+        "200":
+          $ref: "#/components/responses/EchoEnvelopeResponse"
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic auth against the Boomi shared web server.
+  responses:
+    EchoEnvelopeResponse:
+      description: The echo envelope describing the received request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EchoEnvelope"
+          examples:
+            jsonBody:
+              summary: POST with JSON body and query params
+              value:
+                method: POST
+                path: /echotest/v1/echo
+                queryParameters: { foo: bar, page: "2", color: blue, user-name: alice }
+                headers: { Accept: "*/*", Content-Type: application/json }
+                body: { hello: world, nested: { a: 1, b: [1, 2, 3] } }
+            textBody:
+              summary: POST with plain-text body
+              value:
+                method: POST
+                path: /echotest/v1/echo
+                queryParameters: { q: test }
+                headers: { Accept: "*/*", Content-Type: text/plain }
+                body: "just plain text, not json"
+            getRequest:
+              summary: GET with query params (no body)
+              value:
+                method: GET
+                path: /echotest/v1/echo
+                queryParameters: { id: "99", search: widgets, debug: "true" }
+                headers: { Accept: "*/*" }
+                body: ""
+  schemas:
+    EchoEnvelope:
+      type: object
+      description: Structured description of the request as the server received it.
+      properties:
+        method:
+          type: string
+          description: The HTTP method of the request.
+          example: POST
+        path:
+          type: string
+          description: The URL path beginning at the API base (query string not included).
+          example: /echotest/v1/echo
+        queryParameters:
+          type: object
+          additionalProperties:
+            type: string
+          description: Supported query parameters that were supplied on the request.
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: All inbound HTTP headers the runtime exposed to the process.
+        body:
+          description: >
+            The request body. Parsed JSON (object/array/scalar) when the body is
+            valid JSON; otherwise the raw body as a string. Empty string for GET.
+      required:
+        - method
+        - path
+        - queryParameters
+        - headers
+        - body
